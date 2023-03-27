@@ -8,8 +8,7 @@ function App() {
   const [players, setPlayers] = useState([]);
   const [balance, setBalance] = useState("");
   const [amount, setAmount] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [onSuccess, setOnSuccess] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const getManager = async () => {
@@ -32,13 +31,22 @@ function App() {
 
     const accounts = await web3.eth.getAccounts();
 
-    setLoading(true);
+    setMessage("Waiting for transaction success...");
     await lottery.methods.enter().send({
       from: accounts[0],
       value: web3.utils.toWei(amount, "ether"),
     });
-    setLoading(false);
-    setOnSuccess(true);
+    setMessage("You have been entered!");
+  };
+
+  const handleClick = async () => {
+    const accounts = await web3.eth.getAccounts();
+
+    setMessage("Waiting for transaction success...");
+    await lottery.methods.pickWinner().send({
+      from: accounts[0],
+    });
+    setMessage("A winner has been picked!");
   };
 
   console.log(web3);
@@ -67,8 +75,10 @@ function App() {
         </div>
         <button>Enter</button>
       </form>
-      {loading && <h5>waiting on transaction success...</h5>}
-      {onSuccess && <h5>You have been entered!</h5>}
+      <hr />
+      <h4>Ready to pick a winner?</h4>
+      <button onClick={handleClick}>Pick a winner!</button>
+      {message}
     </div>
   );
 }
