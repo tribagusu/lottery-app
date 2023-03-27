@@ -1,37 +1,74 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { useState, useEffect } from "react";
 import "./App.css";
 import web3 from "./web3";
 import lottery from "./lottery";
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [manager, setManager] = useState("");
+  const [players, setPlayers] = useState([]);
+  const [balance, setBalance] = useState("");
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [onSuccess, setOnSuccess] = useState(false);
 
-  web3.eth.getAccounts().then(console.log);
+  useEffect(() => {
+    const getManager = async () => {
+      setManager(await lottery.methods.manager().call());
+    };
+    const getPlayers = async () => {
+      setPlayers(await lottery.methods.getPlayers().call());
+    };
+    const getBalance = async () => {
+      setBalance(await web3.eth.getBalance(lottery.options.address));
+    };
+
+    getManager();
+    getPlayers();
+    getBalance();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const accounts = await web3.eth.getAccounts();
+
+    setLoading(true);
+    await lottery.methods.enter().send({
+      from: accounts[0],
+      value: web3.utils.toWei(amount, "ether"),
+    });
+    setLoading(false);
+    setOnSuccess(true);
+  };
+
+  console.log(web3);
+  console.log(web3.eth.getAccounts().then(console.log));
 
   return (
     <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+      <h2>Lottery Contract</h2>
+      <p>
+        This contract is managed by {manager} <br />
+        There are currently {players.length} people entered, competing to win{" "}
+        {web3.utils.fromWei(balance, "ether")} ether!
       </p>
+      <hr />
+      <form onSubmit={handleSubmit}>
+        <h4>Want to try your luck?</h4>
+        <div>
+          <label>Amount of ether to enter</label>
+          <br />
+          <input
+            required
+            type="text"
+            onChange={(e) => setAmount(e.target.value)}
+            value={amount}
+          />
+        </div>
+        <button>Enter</button>
+      </form>
+      {loading && <h5>waiting on transaction success...</h5>}
+      {onSuccess && <h5>You have been entered!</h5>}
     </div>
   );
 }
